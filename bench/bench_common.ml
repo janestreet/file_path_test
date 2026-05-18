@@ -23,6 +23,7 @@ module Make
   include (
     Path :
     sig
+    @@ portable
       include
         Identifiable.S
         with type t := t

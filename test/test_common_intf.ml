@@ -1,7 +1,7 @@
 open! Core
 
 module Definitions = struct
-  module type Arg = sig
+  module type Arg = sig @@ portable
     module Type : File_path.Type
     module Path : File_path.Common with module Type := Type
     module Examples : Examples.Common with type t := Type.t
