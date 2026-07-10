@@ -16,64 +16,79 @@ module Make
   File_path.Common with module Type := Type = struct
   type t = Path.t
   [@@deriving
-    compare ~localize, equal ~localize, quickcheck, sexp ~stackify, sexp_grammar]
+    compare ~localize
+    , equal ~localize
+    , globalize
+    , quickcheck
+    , sexp ~stackify
+    , sexp_grammar]
 
   let arg_type = Path.arg_type
 
+  [%%template
   include (
     Path :
     sig
-    @@ portable
       include
         Identifiable.S
+        [@alloc stack] [@mode local portable]
         with type t := t
          and type comparator_witness = Path.comparator_witness
     end)
 
-  let%bench_fun "equal =" =
-    let x = Sys.opaque_identity Examples.canonical in
-    let y = Sys.opaque_identity Examples.canonical in
-    fun () -> equal x y
-  ;;
+  let[@alloc stack] of_string = (Path.of_string [@alloc stack])
 
-  let%bench_fun "equal <>" =
-    let x = Sys.opaque_identity Examples.least in
-    let y = Sys.opaque_identity Examples.canonical in
-    fun () -> equal x y
-  ;;
+  module [@alloc a @ l = (heap_global, stack_local)] _ = struct
+    let%bench_fun "equal =" =
+      let x = Sys.opaque_identity Examples.canonical in
+      let y = Sys.opaque_identity Examples.canonical in
+      fun () -> (equal [@mode l]) x y
+    ;;
 
-  let%bench_fun "compare =" =
-    let x = Sys.opaque_identity Examples.least in
-    let y = Sys.opaque_identity Examples.least in
-    fun () -> compare x y
-  ;;
+    let%bench_fun "equal <>" =
+      let x = Sys.opaque_identity Examples.least in
+      let y = Sys.opaque_identity Examples.canonical in
+      fun () -> (equal [@mode l]) x y
+    ;;
 
-  let%bench_fun "compare <" =
-    let x = Sys.opaque_identity Examples.least in
-    let y = Sys.opaque_identity Examples.canonical in
-    fun () -> compare x y
-  ;;
+    let%bench_fun "compare =" =
+      let x = Sys.opaque_identity Examples.least in
+      let y = Sys.opaque_identity Examples.least in
+      fun () -> (compare [@mode l]) x y
+    ;;
 
-  let%bench_fun "compare >" =
-    let x = Sys.opaque_identity Examples.canonical in
-    let y = Sys.opaque_identity Examples.least in
-    fun () -> compare x y
-  ;;
+    let%bench_fun "compare <" =
+      let x = Sys.opaque_identity Examples.least in
+      let y = Sys.opaque_identity Examples.canonical in
+      fun () -> (compare [@mode l]) x y
+    ;;
 
-  let%bench_fun "of_string, canonical" =
-    let string = Sys.opaque_identity Examples.canonical_string in
-    fun () -> of_string string
-  ;;
+    let%bench_fun "compare >" =
+      let x = Sys.opaque_identity Examples.canonical in
+      let y = Sys.opaque_identity Examples.least in
+      fun () -> (compare [@mode l]) x y
+    ;;
 
-  let%bench_fun "of_string, non-canonical" =
-    let string = Sys.opaque_identity Examples.non_canonical_string in
-    fun () -> of_string string
-  ;;
+    let%bench_fun "of_string, canonical" =
+      let string = Sys.opaque_identity Examples.canonical_string in
+      fun () -> ignore ((of_string [@alloc a]) string : t)
+    ;;
 
-  let%bench_fun "to_string" =
-    let t = Sys.opaque_identity Examples.canonical in
-    fun () -> to_string t
-  ;;
+    let%bench_fun "of_string, non-canonical" =
+      let string = Sys.opaque_identity Examples.non_canonical_string in
+      fun () -> ignore ((of_string [@alloc a]) string : t)
+    ;;
+
+    let%bench_fun "to_string" =
+      let t = Sys.opaque_identity Examples.canonical in
+      fun () -> ignore ((to_string [@alloc a]) t : string)
+    ;;
+
+    let%bench_fun "sexp_of_t" =
+      let t = Sys.opaque_identity Examples.canonical in
+      fun () -> ignore ((sexp_of_t [@alloc a]) t : Sexp.t)
+    ;;
+  end
 
   let%bench_fun "t_of_sexp, canonical" =
     let string = Sys.opaque_identity (Sexp.Atom Examples.canonical_string) in
@@ -85,11 +100,6 @@ module Make
     fun () -> t_of_sexp string
   ;;
 
-  let%bench_fun "sexp_of_t" =
-    let t = Sys.opaque_identity Examples.canonical in
-    fun () -> sexp_of_t t
-  ;;
-
   let invariant = Path.invariant
 
   let%bench_fun "invariant" =
@@ -98,13 +108,18 @@ module Make
   ;;
 
   module Expert = struct
-    let unchecked_of_canonical_string = Path.Expert.unchecked_of_canonical_string
-
-    let%bench_fun "unchecked_of_canonical_string" =
-      let string = Sys.opaque_identity Examples.canonical_string in
-      fun () -> unchecked_of_canonical_string string
+    let unchecked_of_canonical_string =
+      (Path.Expert.unchecked_of_canonical_string [@alloc a])
+    [@@alloc a = (stack, heap)]
     ;;
-  end
+
+    module [@alloc a = (heap, stack)] _ = struct
+      let%bench_fun "unchecked_of_canonical_string" =
+        let string = Sys.opaque_identity Examples.canonical_string in
+        fun () -> ignore ((unchecked_of_canonical_string [@alloc a]) string : t)
+      ;;
+    end
+  end]
 end
 
 module%bench Part =

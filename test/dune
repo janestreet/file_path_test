@@ -4,4 +4,4 @@
  (libraries core_unix.command_test_helpers core core_unix
    expect_test_helpers_core file_path filesystem.core)
  (preprocess
-  (pps ppx_jane)))
+  (pps ppx_jane -require-template-extension)))

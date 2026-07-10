@@ -9,15 +9,23 @@ module Make (Arg : Arg) : S with module Tested.Type := Arg.Type = struct
   module Tested = struct
     type t = Arg.Path.t
     [@@deriving
-      compare ~localize, equal ~localize, sexp_of ~stackify, quickcheck, sexp_grammar]
+      compare ~localize
+      , equal ~localize
+      , globalize
+      , sexp_of ~stackify
+      , quickcheck
+      , sexp_grammar]
 
     include Arg.Tested
 
-    include (
+    include%template (
       Arg.Path :
         Identifiable.S
+        [@alloc stack] [@mode local portable]
         with type t := Arg.Type.t
          and type comparator_witness = Arg.Type.comparator_witness)
+
+    let%template[@alloc stack] of_string = (Arg.Path.of_string [@alloc stack])
 
     let () =
       enqueue_expect_test "compare" (fun () ->
@@ -35,7 +43,10 @@ module Make (Arg : Arg) : S with module Tested.Type := Arg.Type = struct
     ;;
 
     module Expert = struct
-      let unchecked_of_canonical_string = Arg.Path.Expert.unchecked_of_canonical_string
+      let%template unchecked_of_canonical_string =
+        (Arg.Path.Expert.unchecked_of_canonical_string [@alloc a])
+      [@@alloc a = (stack, heap)]
+      ;;
     end
 
     let invariant = Arg.Path.invariant

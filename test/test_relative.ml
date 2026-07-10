@@ -157,12 +157,13 @@ let%expect_test _ =
     |}]
 ;;
 
+[%%template
 let number_of_parts = File_path.Relative.number_of_parts
 
 let%expect_test _ =
-  test_function
+  test_immediate
     number_of_parts
-    (module Fn (File_path.Relative) (Int))
+    (module Fn_local (File_path.Relative) (Int))
     ~examples:Examples.Relative.for_conversion
     ~correctness:(fun _ number_of_parts ->
       require
@@ -186,11 +187,12 @@ let%expect_test _ =
     |}]
 ;;
 
-let of_part = File_path.Relative.of_part
+let of_part = (File_path.Relative.of_part [@mode l]) [@@mode l = (global, local)]
 
 let%expect_test _ =
   test_function
     of_part
+    (of_part [@mode local])
     (module Fn (File_path.Part) (File_path.Relative))
     ~examples:Examples.Part.for_conversion
     ~correctness:(fun _ of_part ->
@@ -213,11 +215,12 @@ let%expect_test _ =
     |}]
 ;;
 
-let basename = File_path.Relative.basename
+let basename = (File_path.Relative.basename [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     basename
+    (basename [@alloc stack])
     (module Fn (File_path.Relative) (File_path.Part))
     ~examples:Examples.Relative.for_basename_and_dirname
     ~correctness:(fun _ _ -> (* tested for correctness below *) ());
@@ -236,11 +239,12 @@ let%expect_test _ =
     |}]
 ;;
 
-let dirname = File_path.Relative.dirname
+let dirname = (File_path.Relative.dirname [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     dirname
+    (dirname [@alloc stack])
     (module Fn (File_path.Relative) (Option_of (File_path.Relative)))
     ~examples:Examples.Relative.for_basename_and_dirname
     ~correctness:(fun relative dirname ->
@@ -264,11 +268,12 @@ let%expect_test _ =
     |}]
 ;;
 
-let dirname_exn = File_path.Relative.dirname_exn
+let dirname_exn = (File_path.Relative.dirname_exn [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     dirname_exn
+    (dirname_exn [@alloc stack])
     (module Fn_exn (File_path.Relative) (File_path.Relative))
     ~examples:Examples.Relative.for_basename_and_dirname
     ~correctness:(fun relative dirname_exn ->
@@ -294,12 +299,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let dirname_or_error = File_path.Relative.dirname_or_error
+let dirname_or_error = (File_path.Relative.dirname_or_error [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     dirname_or_error
-    (module Fn (File_path.Relative) (Or_error_of (File_path.Relative)))
+    (dirname_or_error [@alloc stack])
+    (module Fn_or_error (File_path.Relative) (File_path.Relative))
     ~examples:Examples.Relative.for_basename_and_dirname
     ~correctness:(fun relative dirname_or_error ->
       require_equal
@@ -329,11 +337,14 @@ let%expect_test _ =
     |}]
 ;;
 
-let dirname_defaulting_to_dot = File_path.Relative.dirname_defaulting_to_dot
+let dirname_defaulting_to_dot = (File_path.Relative.dirname_defaulting_to_dot [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     dirname_defaulting_to_dot
+    (dirname_defaulting_to_dot [@alloc stack])
     (module Fn (File_path.Relative) (File_path.Relative))
     ~examples:Examples.Relative.for_basename_and_dirname
     ~correctness:(fun relative dirname_defaulting_to_dot ->
@@ -357,11 +368,12 @@ let%expect_test _ =
     |}]
 ;;
 
-let top_dir = File_path.Relative.top_dir
+let top_dir = (File_path.Relative.top_dir [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     top_dir
+    (top_dir [@alloc stack])
     (module Fn (File_path.Relative) (Option_of (File_path.Part)))
     ~examples:Examples.Relative.for_top_dir
     ~correctness:(fun relative top_dir ->
@@ -385,11 +397,12 @@ let%expect_test _ =
     |}]
 ;;
 
-let top_dir_exn = File_path.Relative.top_dir_exn
+let top_dir_exn = (File_path.Relative.top_dir_exn [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     top_dir_exn
+    (top_dir_exn [@alloc stack])
     (module Fn_exn (File_path.Relative) (File_path.Part))
     ~examples:Examples.Relative.for_top_dir
     ~correctness:(fun relative top_dir_exn ->
@@ -415,12 +428,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let top_dir_or_error = File_path.Relative.top_dir_or_error
+let top_dir_or_error = (File_path.Relative.top_dir_or_error [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     top_dir_or_error
-    (module Fn (File_path.Relative) (Or_error_of (File_path.Part)))
+    (top_dir_or_error [@alloc stack])
+    (module Fn_or_error (File_path.Relative) (File_path.Part))
     ~examples:Examples.Relative.for_top_dir
     ~correctness:(fun relative top_dir_or_error ->
       require_equal
@@ -450,11 +466,14 @@ let%expect_test _ =
     |}]
 ;;
 
-let top_dir_defaulting_to_dot = File_path.Relative.top_dir_defaulting_to_dot
+let top_dir_defaulting_to_dot = (File_path.Relative.top_dir_defaulting_to_dot [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     top_dir_defaulting_to_dot
+    (top_dir_defaulting_to_dot [@alloc stack])
     (module Fn (File_path.Relative) (File_path.Part))
     ~examples:Examples.Relative.for_top_dir
     ~correctness:(fun relative top_dir_defaulting_to_dot ->
@@ -478,11 +497,14 @@ let%expect_test _ =
     |}]
 ;;
 
-let all_but_top_dir = File_path.Relative.all_but_top_dir
+let all_but_top_dir = (File_path.Relative.all_but_top_dir [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     all_but_top_dir
+    (all_but_top_dir [@alloc stack])
     (module Fn (File_path.Relative) (Option_of (File_path.Relative)))
     ~examples:Examples.Relative.for_top_dir
     ~correctness:(fun relative all_but_top_dir ->
@@ -506,11 +528,14 @@ let%expect_test _ =
     |}]
 ;;
 
-let all_but_top_dir_exn = File_path.Relative.all_but_top_dir_exn
+let all_but_top_dir_exn = (File_path.Relative.all_but_top_dir_exn [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     all_but_top_dir_exn
+    (all_but_top_dir_exn [@alloc stack])
     (module Fn_exn (File_path.Relative) (File_path.Relative))
     ~examples:Examples.Relative.for_top_dir
     ~correctness:(fun relative all_but_top_dir_exn ->
@@ -541,12 +566,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let all_but_top_dir_or_error = File_path.Relative.all_but_top_dir_or_error
+let all_but_top_dir_or_error = (File_path.Relative.all_but_top_dir_or_error [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     all_but_top_dir_or_error
-    (module Fn (File_path.Relative) (Or_error_of (File_path.Relative)))
+    (all_but_top_dir_or_error [@alloc stack])
+    (module Fn_or_error (File_path.Relative) (File_path.Relative))
     ~examples:Examples.Relative.for_top_dir
     ~correctness:(fun relative all_but_top_dir_or_error ->
       require_equal
@@ -580,12 +608,14 @@ let%expect_test _ =
 ;;
 
 let all_but_top_dir_defaulting_to_self =
-  File_path.Relative.all_but_top_dir_defaulting_to_self
+  (File_path.Relative.all_but_top_dir_defaulting_to_self [@alloc a])
+[@@alloc a = (heap, stack)]
 ;;
 
 let%expect_test _ =
   test_function
     all_but_top_dir_defaulting_to_self
+    (all_but_top_dir_defaulting_to_self [@alloc stack])
     (module Fn (File_path.Relative) (File_path.Relative))
     ~examples:Examples.Relative.for_top_dir
     ~correctness:(fun relative all_but_top_dir_defaulting_to_self ->
@@ -610,11 +640,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let top_dir_and_all_but_top_dir = File_path.Relative.top_dir_and_all_but_top_dir
+let top_dir_and_all_but_top_dir =
+  (File_path.Relative.top_dir_and_all_but_top_dir [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     top_dir_and_all_but_top_dir
+    (top_dir_and_all_but_top_dir [@alloc stack])
     (module Fn
               (File_path.Relative)
               (Option_of (Pair_of (File_path.Part) (File_path.Relative))))
@@ -641,12 +675,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let append_to_basename_exn = File_path.Relative.append_to_basename_exn
+let append_to_basename_exn = (File_path.Relative.append_to_basename_exn [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     append_to_basename_exn
-    (module Fn2_exn (File_path.Relative) (String) (File_path.Relative))
+    (append_to_basename_exn [@alloc stack])
+    (module Fn2_local_exn (File_path.Relative) (String) (File_path.Relative))
     ~examples:Examples.Relative.for_append_to_basename
     ~correctness:(fun (path, string) append_to_basename_exn ->
       require_equal
@@ -679,12 +716,13 @@ let%expect_test _ =
     |}]
 ;;
 
-let append_part = File_path.Relative.append_part
+let append_part = (File_path.Relative.append_part [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     append_part
-    (module Fn2 (File_path.Relative) (File_path.Part) (File_path.Relative))
+    (append_part [@alloc stack])
+    (module Fn2_local (File_path.Relative) (File_path.Part) (File_path.Relative))
     ~examples:Examples.Relative.for_append_part
     ~correctness:(fun (relative, part) append_part ->
       require_equal
@@ -709,12 +747,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let prepend_part = File_path.Relative.prepend_part
+let prepend_part = (File_path.Relative.prepend_part [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     prepend_part
-    (module Fn2 (File_path.Part) (File_path.Relative) (File_path.Relative))
+    (prepend_part [@alloc stack])
+    (module Fn2_local (File_path.Part) (File_path.Relative) (File_path.Relative))
     ~examples:Examples.Relative.for_prepend_part
     ~correctness:(fun (part, relative) prepend_part ->
       require_equal
@@ -744,7 +785,7 @@ let is_prefix = File_path.Relative.is_prefix
 let%expect_test _ =
   test_predicate
     is_prefix
-    (module Fn_labelled (With_prefix (File_path.Relative)) (Bool))
+    (module Fn_labelled (With_prefix_local (File_path.Relative)) (Bool))
     ~examples:Examples.Relative.for_chop_prefix
     ~correctness:(fun _ _ -> (* tested for correctness below *) ());
   [%expect
@@ -769,11 +810,12 @@ let%expect_test _ =
     |}]
 ;;
 
-let chop_prefix = File_path.Relative.chop_prefix
+let chop_prefix = (File_path.Relative.chop_prefix [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     chop_prefix
+    (chop_prefix [@alloc stack])
     (module Fn_labelled
               (With_prefix (File_path.Relative)) (Option_of (File_path.Relative)))
     ~examples:Examples.Relative.for_chop_prefix
@@ -805,11 +847,14 @@ let%expect_test _ =
     |}]
 ;;
 
-let chop_prefix_exn = File_path.Relative.chop_prefix_exn
+let chop_prefix_exn = (File_path.Relative.chop_prefix_exn [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     chop_prefix_exn
+    (chop_prefix_exn [@alloc stack])
     (module Fn_labelled_exn (With_prefix (File_path.Relative)) (File_path.Relative))
     ~examples:Examples.Relative.for_chop_prefix
     ~correctness:(fun { path; prefix } chop_prefix_exn ->
@@ -859,13 +904,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let chop_prefix_or_error = File_path.Relative.chop_prefix_or_error
+let chop_prefix_or_error = (File_path.Relative.chop_prefix_or_error [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     chop_prefix_or_error
-    (module Fn_labelled
-              (With_prefix (File_path.Relative)) (Or_error_of (File_path.Relative)))
+    (chop_prefix_or_error [@alloc stack])
+    (module Fn_labelled_or_error (With_prefix (File_path.Relative)) (File_path.Relative))
     ~examples:Examples.Relative.for_chop_prefix
     ~correctness:(fun { path; prefix } chop_prefix_or_error ->
       require_equal
@@ -915,11 +962,14 @@ let%expect_test _ =
     |}]
 ;;
 
-let chop_prefix_if_exists = File_path.Relative.chop_prefix_if_exists
+let chop_prefix_if_exists = (File_path.Relative.chop_prefix_if_exists [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     chop_prefix_if_exists
+    (chop_prefix_if_exists [@alloc stack])
     (module Fn_labelled (With_prefix (File_path.Relative)) (File_path.Relative))
     ~examples:Examples.Relative.for_chop_prefix
     ~correctness:(fun { path; prefix } chop_prefix_if_exists ->
@@ -955,7 +1005,7 @@ let is_suffix = File_path.Relative.is_suffix
 let%expect_test _ =
   test_predicate
     is_suffix
-    (module Fn_labelled (With_suffix (File_path.Relative)) (Bool))
+    (module Fn_labelled (With_suffix_local (File_path.Relative)) (Bool))
     ~examples:Examples.Relative.for_chop_suffix
     ~correctness:(fun _ _ -> (* tested for correctness below *) ());
   [%expect
@@ -980,11 +1030,12 @@ let%expect_test _ =
     |}]
 ;;
 
-let chop_suffix = File_path.Relative.chop_suffix
+let chop_suffix = (File_path.Relative.chop_suffix [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     chop_suffix
+    (chop_suffix [@alloc stack])
     (module Fn_labelled
               (With_suffix (File_path.Relative)) (Option_of (File_path.Relative)))
     ~examples:Examples.Relative.for_chop_suffix
@@ -1016,11 +1067,14 @@ let%expect_test _ =
     |}]
 ;;
 
-let chop_suffix_exn = File_path.Relative.chop_suffix_exn
+let chop_suffix_exn = (File_path.Relative.chop_suffix_exn [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     chop_suffix_exn
+    (chop_suffix_exn [@alloc stack])
     (module Fn_labelled_exn (With_suffix (File_path.Relative)) (File_path.Relative))
     ~examples:Examples.Relative.for_chop_suffix
     ~correctness:(fun { path; suffix } chop_suffix_exn ->
@@ -1070,13 +1124,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let chop_suffix_or_error = File_path.Relative.chop_suffix_or_error
+let chop_suffix_or_error = (File_path.Relative.chop_suffix_or_error [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     chop_suffix_or_error
-    (module Fn_labelled
-              (With_suffix (File_path.Relative)) (Or_error_of (File_path.Relative)))
+    (chop_suffix_or_error [@alloc stack])
+    (module Fn_labelled_or_error (With_suffix (File_path.Relative)) (File_path.Relative))
     ~examples:Examples.Relative.for_chop_suffix
     ~correctness:(fun { path; suffix } chop_suffix_or_error ->
       require_equal
@@ -1126,11 +1182,14 @@ let%expect_test _ =
     |}]
 ;;
 
-let chop_suffix_if_exists = File_path.Relative.chop_suffix_if_exists
+let chop_suffix_if_exists = (File_path.Relative.chop_suffix_if_exists [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     chop_suffix_if_exists
+    (chop_suffix_if_exists [@alloc stack])
     (module Fn_labelled (With_suffix (File_path.Relative)) (File_path.Relative))
     ~examples:Examples.Relative.for_chop_suffix
     ~correctness:(fun { path; suffix } chop_suffix_if_exists ->
@@ -1161,12 +1220,13 @@ let%expect_test _ =
     |}]
 ;;
 
-let append = File_path.Relative.append
+let append = (File_path.Relative.append [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     append
-    (module Fn2 (File_path.Relative) (File_path.Relative) (File_path.Relative))
+    (append [@alloc stack])
+    (module Fn2_local (File_path.Relative) (File_path.Relative) (File_path.Relative))
     ~examples:Examples.Relative.for_append
     ~correctness:(fun (prefix, suffix) append ->
       require_equal
@@ -1191,11 +1251,12 @@ let%expect_test _ =
     |}]
 ;;
 
-let to_parts = File_path.Relative.to_parts
+let to_parts = (File_path.Relative.to_parts [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     to_parts
+    (to_parts [@alloc stack])
     (module Fn (File_path.Relative) (List_of (File_path.Part)))
     ~examples:Examples.Relative.for_conversion
     ~correctness:(fun relative to_parts ->
@@ -1223,11 +1284,14 @@ let%expect_test _ =
     |}]
 ;;
 
-let to_parts_nonempty = File_path.Relative.to_parts_nonempty
+let to_parts_nonempty = (File_path.Relative.to_parts_nonempty [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     to_parts_nonempty
+    (to_parts_nonempty [@alloc stack])
     (module Fn (File_path.Relative) (Nonempty_list_of (File_path.Part)))
     ~examples:Examples.Relative.for_conversion
     ~correctness:(fun relative to_parts_nonempty ->
@@ -1255,11 +1319,12 @@ let%expect_test _ =
     |}]
 ;;
 
-let of_parts = File_path.Relative.of_parts
+let of_parts = (File_path.Relative.of_parts [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     of_parts
+    (of_parts [@alloc stack])
     (module Fn (List_of (File_path.Part)) (Option_of (File_path.Relative)))
     ~examples:Examples.Part.lists_for_conversion
     ~correctness:(fun parts of_parts ->
@@ -1303,11 +1368,14 @@ let%expect_test _ =
     |}]
 ;;
 
-let of_parts_exn = File_path.Relative.of_parts_exn
+let of_parts_exn = (File_path.Relative.of_parts_exn [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     of_parts_exn
+    (of_parts_exn [@alloc stack])
     (module Fn_exn (List_of (File_path.Part)) (File_path.Relative))
     ~examples:Examples.Part.lists_for_conversion
     ~correctness:(fun parts of_parts_exn ->
@@ -1351,12 +1419,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let of_parts_or_error = File_path.Relative.of_parts_or_error
+let of_parts_or_error = (File_path.Relative.of_parts_or_error [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     of_parts_or_error
-    (module Fn (List_of (File_path.Part)) (Or_error_of (File_path.Relative)))
+    (of_parts_or_error [@alloc stack])
+    (module Fn_or_error (List_of (File_path.Part)) (File_path.Relative))
     ~examples:Examples.Part.lists_for_conversion
     ~correctness:(fun parts of_parts_or_error ->
       require_equal
@@ -1399,11 +1470,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let of_parts_defaulting_to_dot = File_path.Relative.of_parts_defaulting_to_dot
+let of_parts_defaulting_to_dot =
+  (File_path.Relative.of_parts_defaulting_to_dot [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     of_parts_defaulting_to_dot
+    (of_parts_defaulting_to_dot [@alloc stack])
     (module Fn (List_of (File_path.Part)) (File_path.Relative))
     ~examples:Examples.Part.lists_for_conversion
     ~correctness:(fun parts of_parts_defaulting_to_dot ->
@@ -1447,11 +1522,14 @@ let%expect_test _ =
     |}]
 ;;
 
-let of_parts_nonempty = File_path.Relative.of_parts_nonempty
+let of_parts_nonempty = (File_path.Relative.of_parts_nonempty [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     of_parts_nonempty
+    (of_parts_nonempty [@alloc stack])
     (module Fn (Nonempty_list_of (File_path.Part)) (File_path.Relative))
     ~examples:
       (List.filter_map Examples.Part.lists_for_conversion ~f:Nonempty_list.of_list)
@@ -1495,11 +1573,14 @@ let%expect_test _ =
     |}]
 ;;
 
-let simplify_dot = File_path.Relative.simplify_dot
+let simplify_dot = (File_path.Relative.simplify_dot [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     simplify_dot
+    (simplify_dot [@alloc stack])
     (module Fn (File_path.Relative) (File_path.Relative))
     ~examples:Examples.Relative.for_simplify
     ~correctness:(fun original simplified ->
@@ -1553,11 +1634,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let simplify_dot_and_dot_dot_naively = File_path.Relative.simplify_dot_and_dot_dot_naively
+let simplify_dot_and_dot_dot_naively =
+  (File_path.Relative.simplify_dot_and_dot_dot_naively [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     simplify_dot_and_dot_dot_naively
+    (simplify_dot_and_dot_dot_naively [@alloc stack])
     (module Fn (File_path.Relative) (File_path.Relative))
     ~examples:Examples.Relative.for_simplify
     ~correctness:(fun original simplified ->
@@ -1625,4 +1710,4 @@ let%expect_test _ =
     (.././a/b -> ../a/b)
     (.././a/.././b/../. -> ..)
     |}]
-;;
+;;]

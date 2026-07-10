@@ -13,7 +13,7 @@ module Definitions = struct
       { path : 'a
       ; if_under : File_path.Absolute.t
       }
-    [@@deriving compare, equal, quickcheck, sexp_of]
+    [@@deriving compare, equal, globalize, quickcheck, sexp_of]
   end
 
   (** Inputs to functions like [Path.is_prefix]. See also [Helpers.With_prefix], which
@@ -23,7 +23,7 @@ module Definitions = struct
       { path : 'a
       ; prefix : 'a
       }
-    [@@deriving compare, equal, quickcheck, sexp_of]
+    [@@deriving compare, equal, globalize, quickcheck, sexp_of]
   end
 
   (** Inputs to functions like [Path.chop_suffix]. See also [Helpers.With_suffix], which
@@ -33,7 +33,7 @@ module Definitions = struct
       { path : 'a
       ; suffix : File_path.Relative.t
       }
-    [@@deriving compare, equal, quickcheck, sexp_of]
+    [@@deriving compare, equal, globalize, quickcheck, sexp_of]
   end
 
   (** Inputs to functions like [Path.make_absolute]. See also [Helpers.With_under], which
@@ -43,7 +43,7 @@ module Definitions = struct
       { path : 'a
       ; under : File_path.Absolute.t
       }
-    [@@deriving compare, equal, quickcheck, sexp_of]
+    [@@deriving compare, equal, globalize, quickcheck, sexp_of]
   end
 
   (** All modules need these examples. *)

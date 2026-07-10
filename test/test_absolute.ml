@@ -164,11 +164,13 @@ let%expect_test _ =
     |}]
 ;;
 
-let basename = File_path.Absolute.basename
+[%%template
+let basename = (File_path.Absolute.basename [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     basename
+    (basename [@alloc stack])
     (module Fn (File_path.Absolute) (Option_of (File_path.Part)))
     ~examples:Examples.Absolute.for_basename_and_dirname
     ~correctness:(fun absolute basename ->
@@ -193,11 +195,14 @@ let%expect_test _ =
     |}]
 ;;
 
-let basename_exn = File_path.Absolute.basename_exn
+let basename_exn = (File_path.Absolute.basename_exn [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     basename_exn
+    (basename_exn [@alloc stack])
     (module Fn_exn (File_path.Absolute) (File_path.Part))
     ~examples:Examples.Absolute.for_basename_and_dirname
     ~correctness:(fun absolute basename_exn ->
@@ -222,12 +227,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let basename_or_error = File_path.Absolute.basename_or_error
+let basename_or_error = (File_path.Absolute.basename_or_error [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     basename_or_error
-    (module Fn (File_path.Absolute) (Or_error_of (File_path.Part)))
+    (basename_or_error [@alloc stack])
+    (module Fn_or_error (File_path.Absolute) (File_path.Part))
     ~examples:Examples.Absolute.for_basename_and_dirname
     ~correctness:(fun absolute basename_or_error ->
       require_equal
@@ -251,11 +259,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let basename_defaulting_to_dot = File_path.Absolute.basename_defaulting_to_dot
+let basename_defaulting_to_dot =
+  (File_path.Absolute.basename_defaulting_to_dot [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     basename_defaulting_to_dot
+    (basename_defaulting_to_dot [@alloc stack])
     (module Fn (File_path.Absolute) (File_path.Part))
     ~examples:Examples.Absolute.for_basename_and_dirname
     ~correctness:(fun absolute basename_defaulting_to_dot ->
@@ -280,11 +292,12 @@ let%expect_test _ =
     |}]
 ;;
 
-let dirname = File_path.Absolute.dirname
+let dirname = (File_path.Absolute.dirname [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     dirname
+    (dirname [@alloc stack])
     (module Fn (File_path.Absolute) (Option_of (File_path.Absolute)))
     ~examples:Examples.Absolute.for_basename_and_dirname
     ~correctness:(fun absolute dirname ->
@@ -309,11 +322,12 @@ let%expect_test _ =
     |}]
 ;;
 
-let dirname_exn = File_path.Absolute.dirname_exn
+let dirname_exn = (File_path.Absolute.dirname_exn [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     dirname_exn
+    (dirname_exn [@alloc stack])
     (module Fn_exn (File_path.Absolute) (File_path.Absolute))
     ~examples:Examples.Absolute.for_basename_and_dirname
     ~correctness:(fun absolute dirname_exn ->
@@ -338,12 +352,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let dirname_or_error = File_path.Absolute.dirname_or_error
+let dirname_or_error = (File_path.Absolute.dirname_or_error [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     dirname_or_error
-    (module Fn (File_path.Absolute) (Or_error_of (File_path.Absolute)))
+    (dirname_or_error [@alloc stack])
+    (module Fn_or_error (File_path.Absolute) (File_path.Absolute))
     ~examples:Examples.Absolute.for_basename_and_dirname
     ~correctness:(fun absolute dirname_or_error ->
       require_equal
@@ -367,11 +384,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let dirname_defaulting_to_root = File_path.Absolute.dirname_defaulting_to_root
+let dirname_defaulting_to_root =
+  (File_path.Absolute.dirname_defaulting_to_root [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     dirname_defaulting_to_root
+    (dirname_defaulting_to_root [@alloc stack])
     (module Fn (File_path.Absolute) (File_path.Absolute))
     ~examples:Examples.Absolute.for_basename_and_dirname
     ~correctness:(fun absolute dirname_defaulting_to_root ->
@@ -396,11 +417,14 @@ let%expect_test _ =
     |}]
 ;;
 
-let dirname_and_basename = File_path.Absolute.dirname_and_basename
+let dirname_and_basename = (File_path.Absolute.dirname_and_basename [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     dirname_and_basename
+    (dirname_and_basename [@alloc stack])
     (module Fn
               (File_path.Absolute)
               (Option_of (Pair_of (File_path.Absolute) (File_path.Part))))
@@ -429,12 +453,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let append_to_basename_exn = File_path.Absolute.append_to_basename_exn
+let append_to_basename_exn = (File_path.Absolute.append_to_basename_exn [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     append_to_basename_exn
-    (module Fn2_exn (File_path.Absolute) (String) (File_path.Absolute))
+    (append_to_basename_exn [@alloc stack])
+    (module Fn2_local_exn (File_path.Absolute) (String) (File_path.Absolute))
     ~examples:Examples.Absolute.for_append_to_basename
     ~correctness:(fun (path, string) append_to_basename_exn ->
       require_equal
@@ -487,12 +514,13 @@ let%expect_test _ =
     |}]
 ;;
 
-let append_part = File_path.Absolute.append_part
+let append_part = (File_path.Absolute.append_part [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     append_part
-    (module Fn2 (File_path.Absolute) (File_path.Part) (File_path.Absolute))
+    (append_part [@alloc stack])
+    (module Fn2_local (File_path.Absolute) (File_path.Part) (File_path.Absolute))
     ~examples:Examples.Absolute.for_append_part
     ~correctness:(fun (absolute, part) append_part ->
       require_equal
@@ -525,7 +553,7 @@ let is_prefix = File_path.Absolute.is_prefix
 let%expect_test _ =
   test_predicate
     is_prefix
-    (module Fn_labelled (With_prefix (File_path.Absolute)) (Bool))
+    (module Fn_labelled (With_prefix_local (File_path.Absolute)) (Bool))
     ~examples:Examples.Absolute.for_chop_prefix
     ~correctness:(fun _ _ -> (* tested for correctness below *) ());
   [%expect
@@ -551,11 +579,12 @@ let%expect_test _ =
     |}]
 ;;
 
-let chop_prefix = File_path.Absolute.chop_prefix
+let chop_prefix = (File_path.Absolute.chop_prefix [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     chop_prefix
+    (chop_prefix [@alloc stack])
     (module Fn_labelled
               (With_prefix (File_path.Absolute)) (Option_of (File_path.Relative)))
     ~examples:Examples.Absolute.for_chop_prefix
@@ -588,11 +617,14 @@ let%expect_test _ =
     |}]
 ;;
 
-let chop_prefix_exn = File_path.Absolute.chop_prefix_exn
+let chop_prefix_exn = (File_path.Absolute.chop_prefix_exn [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     chop_prefix_exn
+    (chop_prefix_exn [@alloc stack])
     (module Fn_labelled_exn (With_prefix (File_path.Absolute)) (File_path.Relative))
     ~examples:Examples.Absolute.for_chop_prefix
     ~correctness:(fun { path; prefix } chop_prefix_exn ->
@@ -644,13 +676,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let chop_prefix_or_error = File_path.Absolute.chop_prefix_or_error
+let chop_prefix_or_error = (File_path.Absolute.chop_prefix_or_error [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     chop_prefix_or_error
-    (module Fn_labelled
-              (With_prefix (File_path.Absolute)) (Or_error_of (File_path.Relative)))
+    (chop_prefix_or_error [@alloc stack])
+    (module Fn_labelled_or_error (With_prefix (File_path.Absolute)) (File_path.Relative))
     ~examples:Examples.Absolute.for_chop_prefix
     ~correctness:(fun { path; prefix } chop_prefix_or_error ->
       require_equal
@@ -706,7 +740,7 @@ let is_suffix = File_path.Absolute.is_suffix
 let%expect_test _ =
   test_predicate
     is_suffix
-    (module Fn_labelled (With_suffix (File_path.Absolute)) (Bool))
+    (module Fn_labelled (With_suffix_local (File_path.Absolute)) (Bool))
     ~examples:Examples.Absolute.for_chop_suffix
     ~correctness:(fun _ _ -> (* tested for correctness below *) ());
   [%expect
@@ -732,11 +766,12 @@ let%expect_test _ =
     |}]
 ;;
 
-let chop_suffix = File_path.Absolute.chop_suffix
+let chop_suffix = (File_path.Absolute.chop_suffix [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     chop_suffix
+    (chop_suffix [@alloc stack])
     (module Fn_labelled
               (With_suffix (File_path.Absolute)) (Option_of (File_path.Absolute)))
     ~examples:Examples.Absolute.for_chop_suffix
@@ -769,11 +804,14 @@ let%expect_test _ =
     |}]
 ;;
 
-let chop_suffix_exn = File_path.Absolute.chop_suffix_exn
+let chop_suffix_exn = (File_path.Absolute.chop_suffix_exn [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     chop_suffix_exn
+    (chop_suffix_exn [@alloc stack])
     (module Fn_labelled_exn (With_suffix (File_path.Absolute)) (File_path.Absolute))
     ~examples:Examples.Absolute.for_chop_suffix
     ~correctness:(fun { path; suffix } chop_suffix_exn ->
@@ -827,13 +865,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let chop_suffix_or_error = File_path.Absolute.chop_suffix_or_error
+let chop_suffix_or_error = (File_path.Absolute.chop_suffix_or_error [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     chop_suffix_or_error
-    (module Fn_labelled
-              (With_suffix (File_path.Absolute)) (Or_error_of (File_path.Absolute)))
+    (chop_suffix_or_error [@alloc stack])
+    (module Fn_labelled_or_error (With_suffix (File_path.Absolute)) (File_path.Absolute))
     ~examples:Examples.Absolute.for_chop_suffix
     ~correctness:(fun { path; suffix } chop_suffix_or_error ->
       require_equal
@@ -888,11 +928,14 @@ let%expect_test _ =
     |}]
 ;;
 
-let chop_suffix_if_exists = File_path.Absolute.chop_suffix_if_exists
+let chop_suffix_if_exists = (File_path.Absolute.chop_suffix_if_exists [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     chop_suffix_if_exists
+    (chop_suffix_if_exists [@alloc stack])
     (module Fn_labelled (With_suffix (File_path.Absolute)) (File_path.Absolute))
     ~examples:Examples.Absolute.for_chop_suffix
     ~correctness:(fun { path; suffix } chop_suffix_if_exists ->
@@ -924,12 +967,13 @@ let%expect_test _ =
     |}]
 ;;
 
-let append = File_path.Absolute.append
+let append = (File_path.Absolute.append [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     append
-    (module Fn2 (File_path.Absolute) (File_path.Relative) (File_path.Absolute))
+    (append [@alloc stack])
+    (module Fn2_local (File_path.Absolute) (File_path.Relative) (File_path.Absolute))
     ~examples:Examples.Absolute.for_append
     ~correctness:(fun (prefix, suffix) append ->
       require_equal
@@ -960,9 +1004,9 @@ let%expect_test _ =
 let number_of_parts = File_path.Absolute.number_of_parts
 
 let%expect_test _ =
-  test_function
+  test_immediate
     number_of_parts
-    (module Fn (File_path.Absolute) (Int))
+    (module Fn_local (File_path.Absolute) (Int))
     ~examples:Examples.Absolute.for_conversion
     ~correctness:(fun _ _ -> (* tested for correctness below *) ());
   [%expect
@@ -983,11 +1027,12 @@ let%expect_test _ =
     |}]
 ;;
 
-let to_parts = File_path.Absolute.to_parts
+let to_parts = (File_path.Absolute.to_parts [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     to_parts
+    (to_parts [@alloc stack])
     (module Fn (File_path.Absolute) (List_of (File_path.Part)))
     ~examples:Examples.Absolute.for_conversion
     ~correctness:(fun absolute to_parts ->
@@ -1016,12 +1061,13 @@ let%expect_test _ =
     |}]
 ;;
 
-let of_parts = File_path.Absolute.of_parts
+let of_parts = (File_path.Absolute.of_parts [@alloc a]) [@@alloc a = (heap, stack)]
 
 let%expect_test _ =
   test_function
     of_parts
-    (module Fn (List_of (File_path.Part)) (File_path.Absolute))
+    (of_parts [@alloc stack])
+    (module Fn_local (List_of (File_path.Part)) (File_path.Absolute))
     ~examples:Examples.Part.lists_for_conversion
     ~correctness:(fun parts of_parts ->
       require_equal
@@ -1064,11 +1110,14 @@ let%expect_test _ =
     |}]
 ;;
 
-let simplify_dot = File_path.Absolute.simplify_dot
+let simplify_dot = (File_path.Absolute.simplify_dot [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     simplify_dot
+    (simplify_dot [@alloc stack])
     (module Fn (File_path.Absolute) (File_path.Absolute))
     ~examples:Examples.Absolute.for_simplify
     ~correctness:(fun original simplified ->
@@ -1121,11 +1170,15 @@ let%expect_test _ =
     |}]
 ;;
 
-let simplify_dot_and_dot_dot_naively = File_path.Absolute.simplify_dot_and_dot_dot_naively
+let simplify_dot_and_dot_dot_naively =
+  (File_path.Absolute.simplify_dot_and_dot_dot_naively [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     simplify_dot_and_dot_dot_naively
+    (simplify_dot_and_dot_dot_naively [@alloc stack])
     (module Fn (File_path.Absolute) (File_path.Absolute))
     ~examples:Examples.Absolute.for_simplify
     ~correctness:(fun original simplified ->
@@ -1194,4 +1247,4 @@ let%expect_test _ =
     (/.././a/b -> /a/b)
     (/.././a/.././b/../. -> /)
     |}]
-;;
+;;]

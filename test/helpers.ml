@@ -27,7 +27,7 @@ let test_compare (type t) (module Path_type : Path_type with type t = t) list =
     let resorted = List.sort permuted ~compare:Path_type.compare in
     require_equal
       (module struct
-        type t = Path_type.t list [@@deriving equal, sexp_of]
+        type t = Path_type.t list [@@deriving equal, globalize, sexp_of]
       end)
       sorted
       resorted
@@ -142,18 +142,37 @@ let test_predicate
 ;;
 
 let test_function
-  (type fn input output)
+  (type fn local_fn input output)
   ~examples
   ~correctness
   function_to_test
-  (module Fn : Fn with type t = fn and type Input.t = input and type Output.t = output)
+  local_function_to_test
+  (module Fn : Fn
+    with type t = fn
+     and type local_t = local_fn
+     and type Input.t = input
+     and type Output.t = output)
   =
   assert (not (List.is_empty examples));
   let test ~verbose example =
     let result = Fn.apply function_to_test example in
     if verbose then print_s [%sexp (example : Fn.Input.t), "->", (result : Fn.Output.t)];
     require_does_not_raise (fun () -> Fn.Output.invariant result);
-    correctness example result
+    correctness example result;
+    let local_result =
+      let thunk () = exclave_ Fn.local_apply local_function_to_test example in
+      let local_result =
+        match Fn.local_may_allocate result with
+        | true -> thunk ()
+        | false -> require_no_allocation_local thunk
+      in
+      Fn.Output.globalize local_result
+    in
+    require_equal
+      ~message:"global result <> local result"
+      (module Fn.Output)
+      result
+      local_result
   in
   List.iter examples ~f:(test ~verbose:true);
   quickcheck
@@ -161,6 +180,25 @@ let test_function
     Fn.Input.quickcheck_generator
     ~shrinker:Fn.Input.quickcheck_shrinker
     ~f:(test ~verbose:false)
+;;
+
+let test_immediate
+  (type input output)
+  ~examples
+  ~correctness
+  function_to_test
+  (module Fn : Fn
+    with type t = input @ local -> output
+     and type local_t = input @ local -> output @ local
+     and type Input.t = input
+     and type Output.t = output)
+  =
+  test_function
+    ~examples
+    ~correctness
+    function_to_test
+    [%eta1 function_to_test]
+    (module Fn)
 ;;
 
 module Bin_shape_universe = struct
@@ -241,66 +279,104 @@ let test_stable_containers
 ;;
 
 module Option_of (Type : Type) = struct
-  type t = Type.t option [@@deriving compare, equal, quickcheck, sexp_of]
+  type t = Type.t option [@@deriving compare, equal, globalize, quickcheck, sexp_of]
 
   let invariant = Option.invariant Type.invariant
 end
 
 module List_of (Type : Type) = struct
-  type t = Type.t list [@@deriving compare, equal, quickcheck, sexp_of]
+  type t = Type.t list [@@deriving compare, equal, globalize, quickcheck, sexp_of]
 
   let invariant = List.invariant Type.invariant
 end
 
 module Nonempty_list_of (Type : Type) = struct
-  type t = Type.t Nonempty_list.t [@@deriving compare, equal, quickcheck, sexp_of]
+  type t = Type.t Nonempty_list.t
+  [@@deriving compare, equal, globalize, quickcheck, sexp_of]
 
   let invariant = Nonempty_list.invariant Type.invariant
 end
 
 module With_if_under (Type : Type) = struct
   type t = Type.t Examples.With_if_under.t
-  [@@deriving compare, equal, quickcheck, sexp_of]
+  [@@deriving compare, equal, globalize, quickcheck, sexp_of]
 
   let invariant = Examples.With_if_under.invariant Type.invariant
 
-  type 'a fn = Type.t -> if_under:File_path.Absolute.t -> 'a
+  type 'a fn = Type.t -> if_under:File_path.Absolute.t @ local -> 'a
+  type 'a local_fn = Type.t @ local -> if_under:File_path.Absolute.t @ local -> 'a @ local
 
   let apply f ({ path; if_under } : t) = f path ~if_under
+  let local_apply f ({ path; if_under } : t) = exclave_ f path ~if_under
 end
 
 module With_prefix (Type : Type) = struct
-  type t = Type.t Examples.With_prefix.t [@@deriving compare, equal, quickcheck, sexp_of]
+  type t = Type.t Examples.With_prefix.t
+  [@@deriving compare, equal, globalize, quickcheck, sexp_of]
 
   let invariant = Examples.With_prefix.invariant Type.invariant
 
-  type 'a fn = Type.t -> prefix:Type.t -> 'a
+  type 'a fn = Type.t -> prefix:Type.t @ local -> 'a
+  type 'a local_fn = Type.t @ local -> prefix:Type.t @ local -> 'a @ local
 
   let apply f ({ path; prefix } : t) = f path ~prefix
+  let local_apply f ({ path; prefix } : t) = exclave_ f path ~prefix
+end
+
+module With_prefix_local (Type : Type) = struct
+  type t = Type.t Examples.With_prefix.t
+  [@@deriving compare, equal, globalize, quickcheck, sexp_of]
+
+  let invariant = Examples.With_prefix.invariant Type.invariant
+
+  type 'a fn = Type.t @ local -> prefix:Type.t @ local -> 'a
+  type 'a local_fn = Type.t @ local -> prefix:Type.t @ local -> 'a @ local
+
+  let apply f ({ path; prefix } : t) = f path ~prefix
+  let local_apply f ({ path; prefix } : t) = exclave_ f path ~prefix
 end
 
 module With_suffix (Type : Type) = struct
-  type t = Type.t Examples.With_suffix.t [@@deriving compare, equal, quickcheck, sexp_of]
+  type t = Type.t Examples.With_suffix.t
+  [@@deriving compare, equal, globalize, quickcheck, sexp_of]
 
   let invariant = Examples.With_suffix.invariant Type.invariant
 
-  type 'a fn = Type.t -> suffix:File_path.Relative.t -> 'a
+  type 'a fn = Type.t -> suffix:File_path.Relative.t @ local -> 'a
+  type 'a local_fn = Type.t @ local -> suffix:File_path.Relative.t @ local -> 'a @ local
 
   let apply f ({ path; suffix } : t) = f path ~suffix
+  let local_apply f ({ path; suffix } : t) = exclave_ f path ~suffix
+end
+
+module With_suffix_local (Type : Type) = struct
+  type t = Type.t Examples.With_suffix.t
+  [@@deriving compare, equal, globalize, quickcheck, sexp_of]
+
+  let invariant = Examples.With_suffix.invariant Type.invariant
+
+  type 'a fn = Type.t @ local -> suffix:File_path.Relative.t @ local -> 'a
+  type 'a local_fn = Type.t @ local -> suffix:File_path.Relative.t @ local -> 'a @ local
+
+  let apply f ({ path; suffix } : t) = f path ~suffix
+  let local_apply f ({ path; suffix } : t) = exclave_ f path ~suffix
 end
 
 module With_under (Type : Type) = struct
-  type t = Type.t Examples.With_under.t [@@deriving compare, equal, quickcheck, sexp_of]
+  type t = Type.t Examples.With_under.t
+  [@@deriving compare, equal, globalize, quickcheck, sexp_of]
 
   let invariant = Examples.With_under.invariant Type.invariant
 
-  type 'a fn = Type.t -> under:File_path.Absolute.t -> 'a
+  type 'a fn = Type.t -> under:File_path.Absolute.t @ local -> 'a
+  type 'a local_fn = Type.t @ local -> under:File_path.Absolute.t @ local -> 'a @ local
 
   let apply f ({ path; under } : t) = f path ~under
+  let local_apply f ({ path; under } : t) = exclave_ f path ~under
 end
 
 module Pair_of (A : Type) (B : Type) = struct
-  type t = A.t * B.t [@@deriving compare, equal, quickcheck, sexp_of]
+  type t = A.t * B.t [@@deriving compare, equal, globalize, quickcheck, sexp_of]
 
   let invariant (a, b) =
     A.invariant a;
@@ -309,7 +385,7 @@ module Pair_of (A : Type) (B : Type) = struct
 end
 
 module Or_error_of (Type : Type) = struct
-  type t = Type.t Or_error.t [@@deriving compare, equal, sexp_of]
+  type t = Type.t Or_error.t [@@deriving compare, equal, globalize, sexp_of]
 
   let invariant = Or_error.invariant Type.invariant
 
@@ -336,54 +412,118 @@ end
 
 module Fn (Input : Type) (Output : Type) = struct
   type t = Input.t -> Output.t
+  type local_t = Input.t @ local -> Output.t @ local
 
   let apply f x = f x
+  let local_apply f x = exclave_ f x
 
   module Input = Input
   module Output = Output
+
+  let local_may_allocate _ = false
 end
 
-module Fn2 (A : Type) (B : Type) (Output : Type) = struct
-  type t = A.t -> B.t -> Output.t
+module Fn_local (Input : Type) (Output : Type) = struct
+  type t = Input.t @ local -> Output.t
+  type local_t = Input.t @ local -> Output.t @ local
+
+  let apply f x = f x
+  let local_apply f x = exclave_ f x
+
+  module Input = Input
+  module Output = Output
+
+  let local_may_allocate _ = false
+end
+
+module Fn2_local (A : Type) (B : Type) (Output : Type) = struct
+  type t = A.t @ local -> B.t @ local -> Output.t
+  type local_t = A.t @ local -> B.t @ local -> Output.t @ local
 
   let apply f (x, y) = f x y
+  let local_apply f (x, y) = exclave_ f x y
 
   module Input = Pair_of (A) (B)
   module Output = Output
+
+  let local_may_allocate _ = false
 end
 
 module Fn_labelled (Input : Labelled) (Output : Type) = struct
   type t = Output.t Input.fn
+  type local_t = Output.t Input.local_fn
 
   let apply = Input.apply
+  let local_apply = Input.local_apply
 
   module Input = Input
   module Output = Output
+
+  let local_may_allocate _ = false
+end
+
+module Fn_or_error (Input : Type) (Output : Type) = struct
+  include Fn (Input) (Or_error_of (Output))
+
+  let local_may_allocate = Or_error.is_error
+end
+
+module Fn_labelled_or_error (Input : Labelled) (Output : Type) = struct
+  include Fn_labelled (Input) (Or_error_of (Output))
+
+  let local_may_allocate = Or_error.is_error
 end
 
 module Fn_exn (Input : Type) (Output : Type) = struct
   type t = Input.t -> Output.t
+  type local_t = Input.t @ local -> Output.t @ local
 
   let apply f x = Or_error.try_with (fun () -> f x)
 
+  let local_apply f x = exclave_
+    match f x with
+    | y -> Ok y
+    | exception exn -> Error (Error.of_exn exn)
+  ;;
+
   module Input = Input
   module Output = Or_error_of (Output)
+
+  let local_may_allocate = Or_error.is_error
 end
 
-module Fn2_exn (A : Type) (B : Type) (Output : Type) = struct
-  type t = A.t -> B.t -> Output.t
+module Fn2_local_exn (A : Type) (B : Type) (Output : Type) = struct
+  type t = A.t @ local -> B.t @ local -> Output.t
+  type local_t = A.t @ local -> B.t @ local -> Output.t @ local
 
   let apply f (x, y) = Or_error.try_with (fun () -> f x y)
 
+  let local_apply f (x, y) = exclave_
+    match f x y with
+    | z -> Ok z
+    | exception exn -> Error (Error.of_exn exn)
+  ;;
+
   module Input = Pair_of (A) (B)
   module Output = Or_error_of (Output)
+
+  let local_may_allocate = Or_error.is_error
 end
 
 module Fn_labelled_exn (Input : Labelled) (Output : Type) = struct
   type t = Output.t Input.fn
+  type local_t = Output.t Input.local_fn
 
   let apply f x = Or_error.try_with (fun () -> Input.apply f x)
 
+  let local_apply f x = exclave_
+    match Input.local_apply f x with
+    | y -> Ok y
+    | exception exn -> Error (Error.of_exn exn)
+  ;;
+
   module Input = Input
   module Output = Or_error_of (Output)
+
+  let local_may_allocate = Or_error.is_error
 end

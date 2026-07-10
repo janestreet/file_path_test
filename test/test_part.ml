@@ -104,12 +104,16 @@ let%expect_test _ =
     |}]
 ;;
 
-let append_to_basename_exn = File_path.Part.append_to_basename_exn
+[%%template
+let append_to_basename_exn = (File_path.Part.append_to_basename_exn [@alloc a])
+[@@alloc a = (heap, stack)]
+;;
 
 let%expect_test _ =
   test_function
     append_to_basename_exn
-    (module Fn2_exn (File_path.Part) (String) (File_path.Part))
+    (append_to_basename_exn [@alloc stack])
+    (module Fn2_local_exn (File_path.Part) (String) (File_path.Part))
     ~examples:Examples.Part.for_append_to_basename
     ~correctness:(fun (path, string) append_to_basename_exn ->
       require_equal
@@ -135,4 +139,4 @@ let%expect_test _ =
      ->
      (Ok long-hyphenated-name-ending-in-this))
     |}]
-;;
+;;]
