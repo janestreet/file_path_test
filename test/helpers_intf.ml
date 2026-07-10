@@ -6,7 +6,7 @@ open! Core
 module Definitions = struct
   (** An arbitrary input type used by a test. *)
   module type Type = sig
-    type t [@@deriving compare, equal, quickcheck, sexp_of]
+    type t [@@deriving compare, equal, globalize, quickcheck, sexp_of]
 
     include Invariant.S with type t := t
   end
@@ -15,24 +15,33 @@ module Definitions = struct
     module Input : Type
     module Output : Type
 
+    (** Used for functions that allocate an [exn] or an [Error.t] in the failure case. In
+        all other cases of stack-allocated output, we can use [require_no_allocation]. *)
+    val local_may_allocate : Output.t -> bool
+
     type t
+    type local_t
 
     val apply : t -> Input.t -> Output.t
+    val local_apply : local_t -> Input.t -> Output.t
   end
 
   module type Labelled = sig
     include Type
 
     type 'a fn
+    type 'a local_fn
 
     val apply : 'a fn -> t -> 'a
+    val local_apply : 'a local_fn -> t -> 'a
   end
 
   (** A path type (e.g. File_path.Part.t, or File_path.t). *)
   module type Path_type = sig
-    type t [@@deriving quickcheck]
+    type t [@@deriving globalize, quickcheck]
 
-    include Identifiable.S with type t := t
+    include%template Identifiable.S [@alloc stack] [@mode local] with type t := t
+
     include Invariant.S with type t := t
 
     module Expert : sig
@@ -94,7 +103,26 @@ module type Helpers = sig
     :  examples:'input list
     -> correctness:('input -> 'output -> unit)
     -> 'fn
-    -> (module Fn with type t = 'fn and type Input.t = 'input and type Output.t = 'output)
+    -> 'local_fn
+    -> (module Fn
+          with type t = 'fn
+           and type local_t = 'local_fn
+           and type Input.t = 'input
+           and type Output.t = 'output)
+    -> unit
+
+  (** Like [test_function], when ['output] is immediate and thus crosses locality. Tests
+      [correctness] for each input. *)
+  val test_immediate
+    : 'input 'output.
+    examples:'input list
+    -> correctness:('input -> 'output -> unit)
+    -> ('input -> 'output)
+    -> (module Fn
+          with type t = 'input -> 'output
+           and type local_t = 'input -> 'output
+           and type Input.t = 'input
+           and type Output.t = 'output)
     -> unit
 
   (** All tests sharing a [Bin_shape_universe.t] must have unique bin_shape digests.
@@ -136,36 +164,63 @@ module type Helpers = sig
   module Fn (Input : Type) (Output : Type) :
     Fn
     with type t = Input.t -> Output.t
+     and type local_t = Input.t -> Output.t
      and type Input.t = Input.t
      and type Output.t = Output.t
 
-  module Fn2 (A : Type) (B : Type) (Output : Type) :
+  module Fn_local (Input : Type) (Output : Type) :
+    Fn
+    with type t = Input.t -> Output.t
+     and type local_t = Input.t -> Output.t
+     and type Input.t = Input.t
+     and type Output.t = Output.t
+
+  module Fn2_local (A : Type) (B : Type) (Output : Type) :
     Fn
     with type t = A.t -> B.t -> Output.t
+     and type local_t = A.t -> B.t -> Output.t
      and type Input.t = A.t * B.t
      and type Output.t = Output.t
 
   module Fn_labelled (Input : Labelled) (Output : Type) :
     Fn
     with type t = Output.t Input.fn
+     and type local_t = Output.t Input.local_fn
      and type Input.t = Input.t
      and type Output.t = Output.t
+
+  module Fn_or_error (Input : Type) (Output : Type) :
+    Fn
+    with type t = Input.t -> Output.t Or_error.t
+     and type local_t = Input.t -> Output.t Or_error.t
+     and type Input.t = Input.t
+     and type Output.t = Output.t Or_error.t
+
+  module Fn_labelled_or_error (Input : Labelled) (Output : Type) :
+    Fn
+    with type t = Output.t Or_error.t Input.fn
+     and type local_t = Output.t Or_error.t Input.local_fn
+     and type Input.t = Input.t
+     and type Output.t = Output.t Or_error.t
 
   module Fn_exn (Input : Type) (Output : Type) :
     Fn
     with type t = Input.t -> Output.t
+     and type local_t = Input.t -> Output.t
      and type Input.t = Input.t
      and type Output.t = Output.t Or_error.t
 
-  module Fn2_exn (A : Type) (B : Type) (Output : Type) :
+  module Fn2_local_exn (A : Type) (B : Type) (Output : Type) :
     Fn
     with type t = A.t -> B.t -> Output.t
+     and type local_t = A.t -> B.t -> Output.t
      and type Input.t = A.t * B.t
      and type Output.t = Output.t Or_error.t
 
   module Fn_labelled_exn (Input : Labelled) (Output : Type) :
     Fn
     with type t = Output.t Input.fn
+     and type local_t = Output.t Input.local_fn
      and type Input.t = Input.t
      and type Output.t = Output.t Or_error.t
 
@@ -174,7 +229,6 @@ module type Helpers = sig
   module Option_of (Type : Type) : Type with type t = Type.t option
   module List_of (Type : Type) : Type with type t = Type.t list
   module Nonempty_list_of (Type : Type) : Type with type t = Type.t Nonempty_list.t
-  module Or_error_of (Type : Type) : Type with type t = Type.t Or_error.t
   module Pair_of (A : Type) (B : Type) : Type with type t = A.t * B.t
 
   (** Functors wrapping [Examples] types. These tell [test_*] above how to apply a
@@ -184,19 +238,35 @@ module type Helpers = sig
     Labelled
     with type t = Type.t Examples.With_if_under.t
      and type 'a fn = Type.t -> if_under:File_path.Absolute.t -> 'a
+     and type 'a local_fn = Type.t -> if_under:File_path.Absolute.t -> 'a
 
   module With_prefix (Type : Type) :
     Labelled
     with type t = Type.t Examples.With_prefix.t
      and type 'a fn = Type.t -> prefix:Type.t -> 'a
+     and type 'a local_fn = Type.t -> prefix:Type.t -> 'a
+
+  module With_prefix_local (Type : Type) :
+    Labelled
+    with type t = Type.t Examples.With_prefix.t
+     and type 'a fn = Type.t -> prefix:Type.t -> 'a
+     and type 'a local_fn = Type.t -> prefix:Type.t -> 'a
 
   module With_suffix (Type : Type) :
     Labelled
     with type t = Type.t Examples.With_suffix.t
      and type 'a fn = Type.t -> suffix:File_path.Relative.t -> 'a
+     and type 'a local_fn = Type.t -> suffix:File_path.Relative.t -> 'a
+
+  module With_suffix_local (Type : Type) :
+    Labelled
+    with type t = Type.t Examples.With_suffix.t
+     and type 'a fn = Type.t -> suffix:File_path.Relative.t -> 'a
+     and type 'a local_fn = Type.t -> suffix:File_path.Relative.t -> 'a
 
   module With_under (Type : Type) :
     Labelled
     with type t = Type.t Examples.With_under.t
      and type 'a fn = Type.t -> under:File_path.Absolute.t -> 'a
+     and type 'a local_fn = Type.t -> under:File_path.Absolute.t -> 'a
 end

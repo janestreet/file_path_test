@@ -7,5 +7,5 @@ module Absolute = Test_absolute
 module Relative = Test_relative
 module Part = Test_part
 include Test_path
-module Operators = Test_operators
+module%template [@alloc a = (heap, stack)] Operators = Test_operators.O [@alloc a]
 module Stable = Test_stable
